@@ -10,6 +10,8 @@
 package todo
 
 import (
+	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -126,6 +128,14 @@ func TestSaveTodos_OverwritesExistingFile(t *testing.T) {
 	}
 }
 
+func TestSaveTodos_WriteError(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "missing", "todos.json")
+	if err := SaveTodos(path, []Todo{{ID: 1, Title: "x"}}); err == nil {
+		t.Fatal("SaveTodos() error = nil, want an error when the parent directory is missing")
+	}
+}
+
 func TestLoadTodos_MissingFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "does-not-exist.json")
@@ -133,6 +143,9 @@ func TestLoadTodos_MissingFile(t *testing.T) {
 	_, err := LoadTodos(path)
 	if err == nil {
 		t.Fatal("LoadTodos() error = nil, want an error for a missing file")
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("LoadTodos() error = %v, want an error wrapping os.ErrNotExist", err)
 	}
 }
 
@@ -147,6 +160,10 @@ func TestLoadTodos_MalformedJSON(t *testing.T) {
 	_, err := LoadTodos(path)
 	if err == nil {
 		t.Fatal("LoadTodos() error = nil, want an error for malformed JSON")
+	}
+	var syntaxErr *json.SyntaxError
+	if !errors.As(err, &syntaxErr) {
+		t.Errorf("LoadTodos() error = %T, want wrapped *json.SyntaxError", err)
 	}
 }
 
