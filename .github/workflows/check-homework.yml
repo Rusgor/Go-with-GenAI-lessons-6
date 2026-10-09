@@ -171,6 +171,10 @@ jobs:
             echo "::error::Task 2 (validate) has failing tests — see the 'Task 2 — validate package tests' log for the full list."
             FAILED=1
           fi
+          if [ "${{ steps.task3_report.outputs.ok }}" != "true" ]; then
+            echo "::error::Task 3 report is missing or shorter than 80 words — see ai-blind-testing/REPORT.md."
+            FAILED=1
+          fi
 
           if [ "$FAILED" -eq 1 ]; then
             echo "One or more required checks failed."

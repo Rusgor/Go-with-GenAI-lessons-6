@@ -1,69 +1,47 @@
 # Go with GenAI — Lesson 6 homework
 
-**Lesson 6. File I/O, JSON and Testing: a triad of production-ready code**
+**Lesson 6: File I/O, JSON, and testing — a triad for production-ready Go code**
 
-This repository is the starter template for the Lesson 6 homework. Each
-task lives in its own package/folder with a stub to implement and a
-test suite that acts as the specification.
+This repository implements three homework tasks. The package tests specify the expected behavior; the AI blind-testing report records the generated cases and their review. The mentor-review status is kept explicit in `ai-blind-testing/REPORT.md`.
 
-| Folder | Task | What you implement |
-|---|---|---|
-| [`todo/`](todo) | 1 | `SaveTodos` / `LoadTodos` — persist a todo list to JSON, ≥80% coverage |
-| [`validate/`](validate) | 2 | `ValidateEmail` / `ValidatePhone` — table-driven test with ≥8 cases |
-| [`ai-blind-testing/`](ai-blind-testing) | 3 | `REPORT.md` — AI blind test generation, reviewed by your mentor |
+| Folder | Task | Deliverable |
+|---|---:|---|
+| [`todo/`](todo) | 1 | `SaveTodos` / `LoadTodos` JSON persistence; at least 80% package coverage |
+| [`validate/`](validate) | 2 | `ValidateEmail` / `ValidatePhone` with table-driven tests (at least 8 cases each) |
+| [`ai-blind-testing/`](ai-blind-testing) | 3 | AI blind-test report, with mentor review tracked separately |
 
-## Getting started
+## Run and verify
 
-1. Use this repository as a template (or clone it) into your own GitHub
-   account — see **"How to get this onto your own GitHub"** below.
-2. Make sure you have Go 1.22+ installed: `go version`.
-3. Implement `todo/todo.go` and `validate/validate.go`, and extend the
-   test tables in `validate/validate_test.go`.
-4. Fill in `ai-blind-testing/REPORT.md`.
-5. Run everything locally before pushing:
+Requires Go 1.22 or newer (`go version`). From the repository root, run:
 
-   ```bash
-   go test -v ./...          # every test, every subtest, verbose
-   go test -cover ./...      # coverage per package
-   ```
+```bash
+go test -v -count=1 ./...  # all tests and subtests
+go test -count=1 -cover ./...  # coverage by package
+go vet ./...
+```
 
-   or, with the included Makefile:
+Or use the Makefile:
 
-   ```bash
-   make test-verbose
-   make cover
-   ```
+```bash
+make test-verbose
+make cover
+make vet
+```
 
-6. Push your changes. GitHub Actions runs automatically (see below) and
-   posts a full summary in the **Actions** tab of your repo.
+`todo.SaveTodos` writes indented JSON and creates or overwrites the target file. `todo.LoadTodos` returns contextual errors that preserve causes, including `os.ErrNotExist` and JSON syntax errors. The package tests exercise round trips, nil and empty slices, file creation/overwrite, and failure cases.
 
-## How the automatic check works
+The validators intentionally implement scoped syntax checks, not full standards or service verification:
 
-`.github/workflows/check-homework.yml` runs on every push. It is built
-specifically so that **one failing task never hides the others**:
+- Email accepts ASCII dot-atom local parts (maximum 64 bytes) and multi-label domains (maximum 63 bytes per label) with a final label of at least two letters; the full address is limited to 254 bytes. Whitespace, Unicode, quoted local parts, address literals, and malformed dots/hyphens are rejected.
+- Phone accepts 8–15 ASCII digits with an optional leading `+`; separators and other characters are rejected.
 
-- `go test` itself already runs every subtest and every package by
-  default (it does *not* stop at the first failure unless you pass
-  `-failfast`, which this workflow never does) — and all the test cases
-  in this repo use `t.Errorf` rather than `t.Fatalf` for their actual
-  assertions, so a single wrong case doesn't abort its sibling cases.
-- Every workflow step for Task 1 and Task 2 uses `continue-on-error:
-  true`, and every step after it runs with `if: always()`. This means
-  Task 2's tests still run (and their full output is still printed)
-  even if every single Task 1 test failed, and the coverage check and
-  job summary still run too.
-- A **Job Summary** table (visible at the top of the Actions run) gives
-  you a one-glance overview per task, with a pointer to the exact log
-  section for the full list of failing cases.
-- A final "Final result" step looks at everything that was recorded and
-  fails the overall run if anything is incomplete — so the ✗/✓ on your
-  commit is still accurate, but you always see the *complete* list of
-  what's left to do in a single run, not just the first problem.
+See `validate/validate.go` for the exact rules and `validate/validate_test.go` for table-driven examples.
 
-To see this locally, run `go test -v ./...` and read the whole output —
-every `--- FAIL:` line is a separate case you still need to handle.
+## Continuous integration
 
-## How to get this onto your own GitHub
+`.github/workflows/check-homework.yml` runs on pushes, pull requests, and manual dispatch. Task 1 and Task 2 test steps run independently so failures in one do not hide the other. CI also runs `go vet`, enforces at least 80% coverage for `todo`, checks that the AI report is at least 80 words, writes a job summary, and fails the overall job when a required check is incomplete. The AI report's word-count check does not constitute mentor approval; the mentor reviews its contents separately.
+
+## Publish to your own GitHub repository
 
 **Option A — GitHub CLI**
 
@@ -71,94 +49,86 @@ every `--- FAIL:` line is a separate case you still need to handle.
 gh repo create <your-username>/go-with-genai-lesson6-homework --private --source=. --remote=origin --push
 ```
 
-**Option B — manual**
+**Option B — manual setup**
 
 ```bash
 git init
 git add .
-git commit -m "Lesson 6 homework starter"
+git commit -m "Complete Lesson 6 homework"
 git branch -M main
 git remote add origin https://github.com/<your-username>/go-with-genai-lesson6-homework.git
 git push -u origin main
 ```
 
-Then open the **Actions** tab on GitHub once to confirm the workflow
-runs (it should show three failing tasks initially — that's expected
-for an unimplemented template).
+Then open the **Actions** tab to review the workflow run and its summary.
 
 ## Repository layout
 
 ```
 .
-├── .github/workflows/check-homework.yml   # CI: runs & reports on all 3 tasks
+├── .github/workflows/check-homework.yml
 ├── todo/
-│   ├── todo.go          # Task 1 — implement this
-│   ├── todo_test.go     # Task 1 — specification, do not edit
+│   ├── todo.go
+│   ├── todo_test.go
 │   └── README.md
 ├── validate/
-│   ├── validate.go        # Task 2 — implement this
-│   ├── validate_test.go   # Task 2 — extend the case tables, then it's the spec
+│   ├── validate.go
+│   ├── validate_test.go
 │   └── README.md
 ├── ai-blind-testing/
-│   ├── REPORT.md   # Task 3 — fill this in
+│   ├── REPORT.md
 │   └── README.md
 ├── go.mod
 ├── Makefile
-└── README.md   # you are here
+└── README.md
 ```
 
+---
 
-# Go з GenAI — Домашнє завдання до уроку 6
+# Go з GenAI — домашнє завдання до уроку 6
 
-**Урок 6. Робота з файлами, JSON та тестування: тріада для коду, готового до промислової експлуатації**
+**Урок 6: Робота з файлами, JSON і тестування — тріада для коду на Go, готового до промислової експлуатації**
 
-Цей репозиторій є шаблоном для виконання домашнього завдання до уроку 6. Кожне
-завдання розміщене в окремому пакеті/папці та містить шаблон коду для реалізації
-і набір тестів, що слугують специфікацією.
+У цьому репозиторії реалізовано три завдання. Тести пакетів визначають очікувану поведінку, а звіт про сліпу генерацію тестів ШІ фіксує згенеровані випадки та їх перевірку. Статус перевірки ментором зазначається окремо у `ai-blind-testing/REPORT.md`.
 
-| Папка | Завдання | Що потрібно реалізувати |
-|---|---|---|
-| [`todo/`](todo) | 1 | `SaveTodos` / `LoadTodos` — збереження списку справ у JSON, покриття тестами ≥80% |
-| [`validate/`](validate) | 2 | `ValidateEmail` / `ValidatePhone` — табличне тестування (table-driven test) з ≥8 випадками |
-| [`ai-blind-testing/`](ai-blind-testing) | 3 | `REPORT.md` — сліпе тестування генерації коду ШІ (AI blind test), перевірка ментором |
+| Папка | Завдання | Результат |
+|---|---:|---|
+| [`todo/`](todo) | 1 | JSON-збереження через `SaveTodos` / `LoadTodos`; покриття пакета не нижче 80% |
+| [`validate/`](validate) | 2 | `ValidateEmail` / `ValidatePhone` із табличними тестами (щонайменше 8 випадків для кожної функції) |
+| [`ai-blind-testing/`](ai-blind-testing) | 3 | Звіт про сліпу генерацію тестів ШІ; перевірка ментором відстежується окремо |
 
-## Початок роботи
+## Запуск і перевірка
 
-1. Використайте цей репозиторій як шаблон (або клонуйте його) у свій власний обліковий запис
-GitHub — див. розділ **«Як перенести це у власний GitHub»** нижче.
-2. Переконайтеся, що у вас встановлено Go версії 1.22 або новішої: `go version`.
-3. Реалізуйте `todo/todo.go` та `validate/validate.go`, а також розширте
-таблиці тестів у файлі `validate/validate_test.go`.
-4. Заповніть файл `ai-blind-testing/REPORT.md`.
-5. Запустіть усі тести локально перед відправкою змін (push):
+Потрібна версія Go 1.22 або новіша (`go version`). У корені репозиторію виконайте:
 
 ```bash
-go test -v ./...          # усі тести, усі підтести, детальний вивід
-go test -cover ./...      # покриття тестами для кожного пакета
+go test -v -count=1 ./...  # усі тести й підтести
+go test -count=1 -cover ./...  # покриття для кожного пакета
+go vet ./...
 ```
 
-або скористайтеся наявним Makefile:
+Або скористайтеся Makefile:
 
 ```bash
 make test-verbose
 make cover
+make vet
 ```
 
-6. Надішліть (push) свої зміни. GitHub Actions запуститься автоматично (див. нижче) і
-опублікує повний звіт на вкладці **Actions** вашого репозиторію.
+`todo.SaveTodos` записує форматований JSON і створює або перезаписує файл. `todo.LoadTodos` повертає контекстні помилки, зберігаючи їхні першопричини, зокрема `os.ErrNotExist` та помилки синтаксису JSON. Тести пакета перевіряють round-trip, nil- і порожні списки, створення/перезапис файла та помилкові сценарії.
 
-## Як працює автоматична перевірка
+Валідатори навмисно перевіряють визначений набір синтаксичних правил, а не повну відповідність стандартам чи реальність даних:
 
-Файл `.github/workflows/check-homework.yml` запускається при кожному надсиланні змін (push). Систему побудовано так, щоб **невдача в одному завданні не приховувала інші**:
+- Email: ASCII local-part у форматі dot-atom (не більше 64 байтів) і домен із кількох частин (не більше 63 байтів на label), остання з яких має щонайменше дві літери; загальна довжина — до 254 байтів. Пробіли, Unicode, quoted local-part, адресні літерали та некоректні крапки/дефіси відхиляються.
+- Телефон: 8–15 ASCII-цифр із необов'язковим `+` на початку; роздільники й інші символи відхиляються.
 
-- Команда `go test` за замовчуванням виконує всі підтести та пакети (вона *не* зупиняється на першій помилці, якщо не вказано прапорець `-failfast`, чого в цьому робочому процесі не робиться). Крім того, усі тестові випадки в цьому репозиторії використовують `t.Errorf` замість `t.Fatalf` для перевірок, тому один невдалий тест не перериває виконання інших тестів.
-- Кожен крок робочого процесу для Завдання 1 і Завдання 2 використовує параметр `continue-on-error: true`, а всі наступні кроки виконуються з умовою `if: always()`. Це означає, що тести Завдання 2 все одно виконуються (і виводяться повні результати їхньої роботи), навіть якщо всі тести Завдання 1 зазнали невдачі; так само виконуються перевірка покриття коду тестами та формування підсумкового звіту.
-- Таблиця **Job Summary** (яку видно у верхній частині сторінки виконання Actions) надає короткий огляд результатів кожного завдання та посилання на відповідний розділ журналу з повним переліком невдалих тестів.
-- Кінцевий крок «Final result» аналізує всі зафіксовані результати й позначає виконання всього процесу як невдале, якщо щось залишилося невиконаним. Завдяки цьому позначка ✗ або ✓ біля вашого коміту залишається точною, але ви одразу бачите *повний* перелік того, що ще потрібно виправити, а не лише першу виявлену проблему.
+Точні правила наведено у `validate/validate.go`, приклади табличних тестів — у `validate/validate_test.go`.
 
-Щоб побачити це локально, виконайте команду `go test -v ./...` і перегляньте весь вивід: кожен рядок, що починається з `--- FAIL:`, вказує на окремий тест, який потребує вашої уваги.
+## Безперервна інтеграція
 
-## Як перенести це у ваш власний репозиторій на GitHub
+`.github/workflows/check-homework.yml` запускається під час push, pull request і вручну. Тести Завдання 1 та Завдання 2 запускаються незалежно, тому помилки одного не приховують результати іншого. CI також запускає `go vet`, вимагає покриття `todo` щонайменше 80%, перевіряє, що звіт про ШІ містить не менше 80 слів, формує підсумок і завершує процес помилкою, якщо обов'язкова перевірка не пройдена. Перевірка кількості слів не є підтвердженням схвалення ментора — ментор окремо оцінює зміст звіту.
+
+## Публікація у власному репозиторії GitHub
 
 **Варіант А — GitHub CLI**
 
@@ -171,33 +141,31 @@ gh repo create <your-username>/go-with-genai-lesson6-homework --private --source
 ```bash
 git init
 git add .
-git commit -m "Lesson 6 homework starter"
+git commit -m "Complete Lesson 6 homework"
 git branch -M main
 git remote add origin https://github.com/<your-username>/go-with-genai-lesson6-homework.git
 git push -u origin main
 ```
 
-Після цього відкрийте вкладку **Actions** на GitHub, щоб переконатися, що робочий процес (workflow)
-запустився (спочатку має відобразитися три невдалі завдання — це очікувано
-для шаблону, в якому ще не реалізовано код).
+Після цього відкрийте вкладку **Actions**, щоб переглянути запуск workflow та його підсумок.
 
 ## Структура репозиторію
 
 ```
 .
-├── .github/workflows/check-homework.yml   # CI: виконання та звіт щодо всіх 3 завдань
+├── .github/workflows/check-homework.yml
 ├── todo/
-│   ├── todo.go          # Завдання 1 — реалізуйте це
-│   ├── todo_test.go     # Завдання 1 — специфікація, не редагуйте
+│   ├── todo.go
+│   ├── todo_test.go
 │   └── README.md
 ├── validate/
-│   ├── validate.go        # Завдання 2 — реалізуйте це
-│   ├── validate_test.go   # Завдання 2 — доповніть таблиці тестових випадків (це і є специфікація)
+│   ├── validate.go
+│   ├── validate_test.go
 │   └── README.md
 ├── ai-blind-testing/
-│   ├── REPORT.md   # Завдання 3 — заповніть цей файл
+│   ├── REPORT.md
 │   └── README.md
 ├── go.mod
 ├── Makefile
-└── README.md   # ви тут
+└── README.md
 ```
